@@ -52,18 +52,18 @@ class ItemBusinessLayer extends BusinessLayer {
 	public function findAllNew($id, $type, $updatedSince, $showAll, $userId){
 
 		$status = $this->statusFlag->typeToStatus($type, $showAll);
-		
+
 		switch($type){
 			case FeedType::FEED:
-				$items = $this->mapper->findAllNewFeed($id, $updatedSince, 
+				$items = $this->mapper->findAllNewFeed($id, $updatedSince,
 					                                   $status, $userId);
 				break;
 			case FeedType::FOLDER:
-				$items = $this->mapper->findAllNewFolder($id, $updatedSince, 
+				$items = $this->mapper->findAllNewFolder($id, $updatedSince,
 					                                   $status, $userId);
 				break;
 			default:
-				$items = $this->mapper->findAllNew($updatedSince, $status, 
+				$items = $this->mapper->findAllNew($updatedSince, $status,
 					                               $userId);
 		}
 
@@ -71,21 +71,20 @@ class ItemBusinessLayer extends BusinessLayer {
 	}
 
 
-	public function findAll($id, $type, $limit, $offset, 
-		$showAll, $userId){
+	public function findAll($id, $type, $limit, $offset, $showAll, $userId){
 		$status = $this->statusFlag->typeToStatus($type, $showAll);
 
 		switch($type){
 			case FeedType::FEED:
-				$items = $this->mapper->findAllFeed($id, $limit, $offset, 
+				$items = $this->mapper->findAllFeed($id, $limit, $offset,
 					                                   $status, $userId);
 				break;
 			case FeedType::FOLDER:
-				$items = $this->mapper->findAllFolder($id, $limit, $offset, 
+				$items = $this->mapper->findAllFolder($id, $limit, $offset,
 					                                   $status, $userId);
 				break;
 			default:
-				$items = $this->mapper->findAll($limit, $offset, $status, 
+				$items = $this->mapper->findAll($limit, $offset, $status,
 					                               $userId);
 		}
 
@@ -119,7 +118,7 @@ class ItemBusinessLayer extends BusinessLayer {
 		$item = $this->find($itemId, $userId);
 		$item->setLastModified($this->timeFactory->getTime());
 		if($isRead){
-			$item->setRead();	
+			$item->setRead();
 		} else {
 			$item->setUnread();
 		}
@@ -143,7 +142,7 @@ class ItemBusinessLayer extends BusinessLayer {
 
 
 	/**
-	 * This method deletes all unread feeds that are not starred and over the 
+	 * This method deletes all unread feeds that are not starred and over the
 	 * count of $this->autoPurgeCount starting by the oldest. This is to clean
 	 * up the database so that old entries dont spam your db. As criteria for
 	 * old, the id is taken
