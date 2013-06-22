@@ -45,12 +45,12 @@ class FeedFetcher implements IFeedFetcher {
 	private $purifier;
 
 	public function __construct(API $api,
-	                            SimplePieAPIFactory $simplePieFactory,
-	                            FaviconFetcher $faviconFetcher,
-	                            TimeFactory $time,
-	                            $cacheDirectory,
-	                            $cacheDuration,
-	                            $purifier){
+				    SimplePieAPIFactory $simplePieFactory,
+				    FaviconFetcher $faviconFetcher,
+				    TimeFactory $time,
+				    $cacheDirectory,
+				    $cacheDuration,
+				    $purifier){
 		$this->api = $api;
 		$this->cacheDirectory = $cacheDirectory;
 		$this->cacheDuration = $cacheDuration;
@@ -75,7 +75,7 @@ class FeedFetcher implements IFeedFetcher {
 	 * @throws FetcherException if simple pie fails
 	 * @return array an array containing the new feed and its items
 	 */
-	public function fetch($url) {
+	public function fetch($url, $getFavicon=true) {
 		$simplePie = $this->simplePieFactory->getCore();
 		$simplePie->set_feed_url($url);
 		$simplePie->enable_cache(true);
@@ -83,7 +83,7 @@ class FeedFetcher implements IFeedFetcher {
 		$simplePie->set_cache_duration($this->cacheDuration);
 
 		if (!$simplePie->init()) {
-			throw new FetcherException('Could not initialize simple pie');
+			throw new FetcherException('Could not initialize simple pie on feed with url ' . $url);
 		}
 
 
@@ -96,7 +96,7 @@ class FeedFetcher implements IFeedFetcher {
 				}
 			}
 
-			$feed = $this->buildFeed($simplePie, $url);
+			$feed = $this->buildFeed($simplePie, $url, $getFavicon);
 
 			return array($feed, $items);
 
@@ -111,15 +111,14 @@ class FeedFetcher implements IFeedFetcher {
 		$item = new Item();
 		$item->setStatus(0);
 		$item->setUnread();
-                $item->setUrl(html_entity_decode($simplePieItem->get_permalink(),
-                        ENT_COMPAT, 'UTF-8'));
+		$item->setUrl(html_entity_decode($simplePieItem->get_permalink(),
+			ENT_COMPAT, 'UTF-8'));
 		// unescape content because angularjs helps against XSS
-                $item->setTitle(html_entity_decode($simplePieItem->get_title(),
-                        ENT_COMPAT, 'UTF-8'));
+		$item->setTitle(html_entity_decode($simplePieItem->get_title(),
+			ENT_COMPAT, 'UTF-8'));
 		$guid = $simplePieItem->get_id();
 		$item->setGuid($guid);
 		$item->setGuidHash(md5($guid));
-
 		$item->setBody(str_replace('<a', '<a target="_blank"',
 		// escape XSS
 		$this->purifier->purify($simplePieItem->get_content())));
@@ -159,7 +158,7 @@ class FeedFetcher implements IFeedFetcher {
 	}
 
 
-	protected function buildFeed($simplePieFeed, $url) {
+	protected function buildFeed($simplePieFeed, $url, $getFavicon) {
 		$feed = new Feed();
 
 		// unescape content because angularjs helps against XSS
@@ -177,14 +176,16 @@ class FeedFetcher implements IFeedFetcher {
 		$feed->setUrlHash(md5($url));
 		$feed->setAdded($this->time->getTime());
 
-		// use the favicon from the page first since most feeds use a weird image
-		$favicon = $this->faviconFetcher->fetch($feed->getLink());
+		if ($getFavicon) {
+			// use the favicon from the page first since most feeds use a weird image
+			$favicon = $this->faviconFetcher->fetch($feed->getLink());
 
-		if (!$favicon) {
-			$favicon = $simplePieFeed->get_image_url();
+			if (!$favicon) {
+				$favicon = $simplePieFeed->get_image_url();
+			}
+
+			$feed->setFaviconLink($favicon);
 		}
-
-		$feed->setFaviconLink($favicon);
 
 		return $feed;
 	}
