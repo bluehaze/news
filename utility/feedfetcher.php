@@ -123,12 +123,7 @@ class FeedFetcher implements IFeedFetcher {
 		// escape XSS
 		$this->purifier->purify($simplePieItem->get_content())));
 
-		// pubdate is not required. if not given use the current date
 		$date = $simplePieItem->get_date('U');
-		if(!$date) {
-			$date = $this->time->getTime();
-		}
-
 		$item->setPubDate($date);
 		$item->setLastModified($this->time->getTime());
 
