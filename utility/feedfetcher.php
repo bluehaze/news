@@ -44,11 +44,11 @@ class FeedFetcher implements IFeedFetcher {
 	private $time;
 	private $purifier;
 
-	public function __construct(API $api, 
+	public function __construct(API $api,
 	                            SimplePieAPIFactory $simplePieFactory,
 	                            FaviconFetcher $faviconFetcher,
 	                            TimeFactory $time,
-	                            $cacheDirectory, 
+	                            $cacheDirectory,
 	                            $cacheDuration,
 	                            $purifier){
 		$this->api = $api;
@@ -81,7 +81,7 @@ class FeedFetcher implements IFeedFetcher {
 		$simplePie->enable_cache(true);
 		$simplePie->set_cache_location($this->cacheDirectory);
 		$simplePie->set_cache_duration($this->cacheDuration);
-		
+
 		if (!$simplePie->init()) {
 			throw new FetcherException('Could not initialize simple pie');
 		}
@@ -119,20 +119,28 @@ class FeedFetcher implements IFeedFetcher {
 		$guid = $simplePieItem->get_id();
 		$item->setGuid($guid);
 		$item->setGuidHash(md5($guid));
-		$item->setBody(str_replace('<a', '<a target="_blank"', 
-			// escape XSS
-			$this->purifier->purify($simplePieItem->get_content())));
-		$item->setPubDate($simplePieItem->get_date('U'));
+
+		$item->setBody(str_replace('<a', '<a target="_blank"',
+		// escape XSS
+		$this->purifier->purify($simplePieItem->get_content())));
+
+		// pubdate is not required. if not given use the current date
+		$date = $simplePieItem->get_date('U');
+		if(!$date) {
+			$date = $this->time->getTime();
+		}
+
+		$item->setPubDate($date);
 		$item->setLastModified($this->time->getTime());
 
 		$author = $simplePieItem->get_author();
 		if ($author !== null) {
-			$name = html_entity_decode($author->get_name(), 
+			$name = html_entity_decode($author->get_name(),
 				ENT_COMPAT, 'UTF-8' );
 			if ($name) {
 				$item->setAuthor($name);
 			} else {
-				$item->setAuthor(html_entity_decode($author->get_email()), 
+				$item->setAuthor(html_entity_decode($author->get_email()),
 					ENT_COMPAT, 'UTF-8' );
 			}
 		}
@@ -155,9 +163,9 @@ class FeedFetcher implements IFeedFetcher {
 		$feed = new Feed();
 
 		// unescape content because angularjs helps against XSS
-		$title = html_entity_decode($simplePieFeed->get_title(), 
+		$title = html_entity_decode($simplePieFeed->get_title(),
 			ENT_COMPAT, 'UTF-8' );
-		
+
 		// if there is no title use the url
 		if(!$title) {
 			$title = $url;
@@ -175,7 +183,7 @@ class FeedFetcher implements IFeedFetcher {
 		if (!$favicon) {
 			$favicon = $simplePieFeed->get_image_url();
 		}
-		
+
 		$feed->setFaviconLink($favicon);
 
 		return $feed;

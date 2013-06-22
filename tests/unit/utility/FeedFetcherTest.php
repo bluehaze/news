@@ -91,9 +91,9 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 			->will($this->returnValue($this->time));
 		$this->cacheDuration = 100;
 		$this->cacheDirectory = 'dir/';
-		$this->fetcher = new FeedFetcher($this->getAPIMock(), 
+		$this->fetcher = new FeedFetcher($this->getAPIMock(),
 		                                 $this->coreFactory,
-		                                 $this->faviconFetcher, 
+		                                 $this->faviconFetcher,
 		                                 $timeFactory,
 		                                 $this->cacheDirectory,
 		                                 $this->cacheDuration,
@@ -140,7 +140,7 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 		$this->setExpectedException('\OCA\News\Utility\FetcherException');
 		$this->fetcher->fetch($this->url);
 	}
-	
+
 
 	public function testShouldCatchExceptionsAndThrowOwnException() {
 		$this->core->expects($this->once())
@@ -167,7 +167,7 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 	}
 
 
-	private function createItem($author=false, $enclosureType=null) {
+	private function createItem($author=false, $enclosureType=null, $noPubDate=false) {
 		$this->purifier->expects($this->once())
 			->method('purify')
 			->with($this->equalTo($this->body))
@@ -176,9 +176,17 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 		$this->expectItem('get_title', $this->title);
 		$this->expectItem('get_id', $this->guid);
 		$this->expectItem('get_content', $this->body);
-		$this->expectItem('get_date', $this->pub);
 
 		$item = new Item();
+
+		if($noPubDate) {
+			$this->expectItem('get_date', 0);
+			$item->setPubDate($this->time);
+		} else {
+			$this->expectItem('get_date', $this->pub);
+			$item->setPubDate($this->pub);
+		}
+
 		$item->setStatus(0);
 		$item->setUnread();
 		$item->setUrl($this->permalink);
@@ -186,7 +194,6 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 		$item->setGuid($this->guid);
 		$item->setGuidHash(md5($this->guid));
 		$item->setBody($this->body2);
-		$item->setPubDate($this->pub);
 		$item->setLastModified($this->time);
 		if($author) {
 			$mock = $this->getMock('author', array('get_name'));
@@ -309,6 +316,71 @@ class FeedFetcherTest extends \OCA\AppFramework\Utility\TestUtility {
 		$feed = $this->createFeed(false, true);
 		$this->expectCore('get_items', array($this->item));
 		$result = $this->fetcher->fetch($this->url);
+
+		$this->assertEquals(array($feed, array($item)), $result);
+	}
+
+	public function testFetchMapItemsNoPubdate(){
+		$this->core->expects($this->once())
+			->method('init')
+			->will($this->returnValue(true));
+		$item = $this->createItem(false, true, true);
+		$feed = $this->createFeed(false, true);
+		$this->expectCore('get_items', array($this->item));
+		$result = $this->fetcher->fetch($this->url);
+
+		$this->assertEquals(array($feed, array($item)), $result);
+	}
+
+
+	public function testFetchMapItemsGetFavicon() {
+		$this->expectCore('get_title', $this->feedTitle);
+		$this->expectCore('get_link', $this->feedLink);
+
+		$feed = new Feed();
+		$feed->setTitle(html_entity_decode($this->feedTitle));
+		$feed->setUrl($this->url);
+		$feed->setLink($this->feedLink);
+		$feed->setUrlHash(md5($this->url));
+		$feed->setAdded($this->time);
+		$feed->setFaviconLink($this->webFavicon);
+
+		$this->core->expects($this->once())
+				->method('init')
+				->will($this->returnValue(true));
+
+		$this->faviconFetcher->expects($this->once())
+				->method('fetch')
+				->will($this->returnValue($this->webFavicon));
+
+		$item = $this->createItem(false, true);
+		$this->expectCore('get_items', array($this->item));
+		$result = $this->fetcher->fetch($this->url /*, true*/);
+
+		$this->assertEquals(array($feed, array($item)), $result);
+	}
+
+	public function testFetchMapItemsNoGetFavicon() {
+		$this->expectCore('get_title', $this->feedTitle);
+		$this->expectCore('get_link', $this->feedLink);
+
+		$feed = new Feed();
+		$feed->setTitle(html_entity_decode($this->feedTitle));
+		$feed->setUrl($this->url);
+		$feed->setLink($this->feedLink);
+		$feed->setUrlHash(md5($this->url));
+		$feed->setAdded($this->time);
+
+		$this->core->expects($this->once())
+				->method('init')
+				->will($this->returnValue(true));
+
+		$this->faviconFetcher->expects($this->never())
+				->method('fetch');
+
+		$item = $this->createItem(false, true);
+		$this->expectCore('get_items', array($this->item));
+		$result = $this->fetcher->fetch($this->url, false);
 
 		$this->assertEquals(array($feed, array($item)), $result);
 	}
