@@ -1,7 +1,6 @@
 owncloud-news (1.002)
 * Fix bug that wouldnt mark items as read if they were set read in a folder, feed or all read request
 * Style blockquotes
-* Use current date if no date is given in the feed
 * Speed up feed update by not fetching the favicon on each update
 
 owncloud-news (1.001)
