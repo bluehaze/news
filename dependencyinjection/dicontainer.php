@@ -100,8 +100,8 @@ class DIContainer extends BaseContainer {
 			$config = \HTMLPurifier_Config::createDefault();
 			$config->set('Cache.SerializerPath', $directory);
 			$config->set('HTML.SafeIframe', true);
-			$config->set('URI.SafeIframeRegexp', 
-				'%^http://(www.youtube(?:-nocookie)?.com/embed/|player.vimeo.com/video/)%'); //allow YouTube and Vimeo
+			$config->set('URI.SafeIframeRegexp',
+				'%^(http[s]?:)?//(www.youtube(?:-nocookie)?.com/embed/|player.vimeo.com/video/|w.soundcloud.com/player/)%'); //allow YouTube, Vimeo and Soundcloud iframes
 			return new \HTMLPurifier($config);
 		});
 
